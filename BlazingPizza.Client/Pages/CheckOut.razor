@@ -2,7 +2,10 @@
 @inject OrdersClient OrdersClient
 @inject OrderState OrderState
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
 @attribute [Authorize]
+
     <div class="main">
         <EditForm Model="OrderState.Order.DeliveryAddress" OnValidSubmit="PlaceOrder">
             <div class="checkout-cols">
@@ -40,6 +43,28 @@
         catch (AccessTokenNotAvailableException ex)
         {
             ex.Redirect();
+        }
+    }
+
+    protected async override void OnInitialized()
+    {
+        await RequestNotificationSubscriptionAsync();
+    }
+
+
+    async Task RequestNotificationSubscriptionAsync()
+    {
+        var subscription = await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.requestSubscription");
+        if (subscription != null)
+        {
+            try
+            {
+                await OrdersClient.SubscribeToNotifications(subscription);
+            }
+            catch (AccessTokenNotAvailableException ex)
+            {
+                ex.Redirect();
+            }
         }
     }
 }
